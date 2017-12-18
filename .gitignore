@@ -3,3 +3,5 @@
 *.png
 *.gif
 *.pyc
+.ipynb_checkpoints/
+.DS_Store
