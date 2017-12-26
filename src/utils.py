@@ -23,7 +23,6 @@ class TextDataset(Dataset):
                 on a sample.
         """
         
-        
         self.data = pd.DataFrame()
         self.subjects = subjects
         self.root_dir = root_dir
@@ -48,7 +47,7 @@ class TextDataset(Dataset):
         tokens = self.tokenizer.tokenize(x)
         return tokens
 
-    def get_data(self):        
+    def get_data(self, col_lst = []):        
         for sub in self.subjects:
             df_aux = pd.read_csv(self.root_dir + sub + '.csv')
             df_aux['subject'] = sub
@@ -56,6 +55,8 @@ class TextDataset(Dataset):
             df_aux['tokens'] = df_aux['content'].apply(lambda x: self.tokenize_sentence(x) )
 
             self.data=self.data.append(df_aux)
+        if len(col_lst) != 0:
+            self.data = self.data[col_lst]
             
     def __len__(self):
         return len(self.textData)
