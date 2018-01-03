@@ -12,12 +12,13 @@ import re
 from torch.utils.data import Dataset, DataLoader
 from nltk.tokenize import TweetTokenizer # a tweet tokenizer from nltk.
 import glob
+from nltk.corpus import stopwords
 
 
 class TextDataset(Dataset):
 
-    def __init__(self, subjects, root_dir, col_lst, transform=None, val_size=0.1,
-                 is_valid=False, is_test=False, is_train = False):
+    def __init__(self, subjects, root_dir, col_lst = [], transform=None, val_size=0.1,
+                 is_valid=False, is_test=False, is_train = False, lang = "english"):
         """
         Args:
             root_dir (string): Directory with all the images.
@@ -29,18 +30,21 @@ class TextDataset(Dataset):
         self.subjects = subjects
         self.root_dir = root_dir
         self.transform = transform
-        self.tokenizer = TweetTokenizer()
-        self.get_data(col_lst)
-
+        self.tokenizer = TweetTokenizer() 
+        #self.stops = set(stopwords.words(lang))
+        self.get_data()
+        #self.data = (self.data if len(col_lst) else self.data[col_lst])
+        
         if ( (is_train) or (is_valid)):
             self.y = self.data[self.data.columns[:-1]].values
 
             if is_valid:
                 self.split_data(val_size)
                 
-        if is_test:
+        elif is_test:
             self.y = np.zeros([len(self.data), len(self.data.columns[:-1])])
-            
+          
+        
     def split_data(self, val_size = 0.1):
 
         np.random.seed(4572)
@@ -52,6 +56,11 @@ class TextDataset(Dataset):
         
         self.data = self.data.take(index,axis=0)
         self.y = self.y.take(index,axis=0)      
+
+    def removeStopwords(self, x):
+        # Removing all the stopwords
+        filtered_words = [word for word in x.split() if word not in self.stops]
+        return " ".join(filtered_words)
 
     def removeTagsAndUris(self, x):
     
@@ -67,27 +76,29 @@ class TextDataset(Dataset):
         return re.sub(uri_re, "", text)
 
         
-    def tokenize_sentence(self, x):
-        tokens = self.tokenizer.tokenize(x)
-        return tokens
 
-    def get_data(self, col_lst = []):
+
+    def process_data(self, col_lst = []):
+        #self.data['content'] = df_aux['content'].apply(lambda x: self.removeStopwords(x) )            
+        self.data['content'] = self.data['content'].apply(lambda x: self.removeTagsAndUris(x) )
+        self.data['tokens'] = self.data['content'].apply(lambda x: self.tokenizer.tokenize(x) )
+            
+        if len(col_lst) >0:
+            self.data = self.data[col_lst]       
+
+        
+
+    def get_data(self):
 
         for file in glob.glob(self.root_dir + "/*.csv"):
             df_aux = pd.read_csv(file)
-            
             if file.split('/')[-1][:-4] in self.subjects:
                 sub = file.split('/')[-1][:-4]
             else:
                 sub = None
                                 
-            df_aux['subject'] = sub
-            df_aux['content'] = df_aux['content'].apply(lambda x: self.removeTagsAndUris(x) )
-            df_aux['tokens'] = df_aux['content'].apply(lambda x: self.tokenize_sentence(x) )
-    
+            df_aux['subject'] = sub    
             self.data=self.data.append(df_aux)
-        if len(col_lst) != 0:
-            self.data = self.data[col_lst]
             
     def __len__(self):
         return len(self.data)
