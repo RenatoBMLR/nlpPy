@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+o#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Mon Dec 18 19:12:46 2017
@@ -26,4 +26,8 @@ if __name__ == '__main__':
     print(Net)
     '''
     
+    subjects=['biology', 'cooking', 'crypto', 'diy', 'robotics', 'travel']
+    path2data = '../data/'
+
+    tdataset = TextDataset(subjects, path2data + 'train/', col_lst = ['tokens', 'subject'] , is_train = True)
     

@@ -13,25 +13,24 @@ from torch.utils.data import Dataset, DataLoader
 from nltk.tokenize import TweetTokenizer # a tweet tokenizer from nltk.
 import glob
 from nltk.corpus import stopwords
-
+import string
 
 class TextDataset(Dataset):
 
     def __init__(self, subjects, root_dir, col_lst = [], transform=None, val_size=0.1,
-                 is_valid=False, is_test=False, is_train = False, lang = "english"):
+                 is_valid=False, is_test=False, is_train = False, lang = 'english'):
         """
         Args:
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        
         self.data = pd.DataFrame()
         self.subjects = subjects
         self.root_dir = root_dir
         self.transform = transform
         self.tokenizer = TweetTokenizer() 
-        #self.stops = set(stopwords.words(lang))
+        self.stops = set(stopwords.words(lang))
         self.get_data()
         #self.data = (self.data if len(col_lst) else self.data[col_lst])
         
@@ -62,6 +61,10 @@ class TextDataset(Dataset):
         filtered_words = [word for word in x.split() if word not in self.stops]
         return " ".join(filtered_words)
 
+    def removePonctuation(self, x):
+        return ' '.join(word.strip(string.punctuation) for word in x.split())
+    
+    
     def removeTagsAndUris(self, x):
     
         uri_re = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
@@ -75,18 +78,15 @@ class TextDataset(Dataset):
         # Returning text stripping out all uris
         return re.sub(uri_re, "", text)
 
-        
-
-
     def process_data(self, col_lst = []):
-        #self.data['content'] = df_aux['content'].apply(lambda x: self.removeStopwords(x) )            
+        
         self.data['content'] = self.data['content'].apply(lambda x: self.removeTagsAndUris(x) )
+        self.data['data'] = self.data['content'].apply(lambda x: self.removeStopwords(x) ) 
+        self.data['data'] = self.data['data'].apply(lambda x: self.removePonctuation(x) )
         self.data['tokens'] = self.data['content'].apply(lambda x: self.tokenizer.tokenize(x) )
             
         if len(col_lst) >0:
             self.data = self.data[col_lst]       
-
-        
 
     def get_data(self):
 
