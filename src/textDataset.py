@@ -14,6 +14,10 @@ from nltk.tokenize import TweetTokenizer # a tweet tokenizer from nltk.
 import glob
 from nltk.corpus import stopwords
 import string
+from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
+
+
 
 class TextDataset(Dataset):
 
@@ -29,8 +33,13 @@ class TextDataset(Dataset):
         self.subjects = subjects
         self.root_dir = root_dir
         self.transform = transform
+        
+        
         self.tokenizer = TweetTokenizer() 
-        self.stops = set(stopwords.words(lang))
+        self.stop_words = set(stopwords.words(lang))
+        self.lemmatizer = WordNetLemmatizer()
+        self.ps = PorterStemmer()
+
         self.get_data()
         #self.data = (self.data if len(col_lst) else self.data[col_lst])
         
@@ -56,16 +65,26 @@ class TextDataset(Dataset):
         self.data = self.data.take(index,axis=0)
         self.y = self.y.take(index,axis=0)      
 
-    def removeStopwords(self, x):
+    def _removeStopwords(self, words):
         # Removing all the stopwords
-        filtered_words = [word for word in x.split() if word not in self.stops]
-        return " ".join(filtered_words)
+        return " ".join([word for word in words.split() if word not in self.stop_words])
 
-    def removePonctuation(self, x):
-        return ' '.join(word.strip(string.punctuation) for word in x.split())
+
+    def _removePonctuation(self, words):
+        return ' '.join(word.strip(string.punctuation) for word in words.split())
+
     
+    def _lemmatizing(self, words):
+        #Lemmatizing
+        return ' '.join(self.lemmatizer.lemmatize(word) for word in words.split())
+
     
-    def removeTagsAndUris(self, x):
+    def _stemming(self, words):
+        #Stemming
+        return ' '.join(self.ps(word) for word in words.split())
+    
+        
+    def _removeTagsAndUris(self, x):
     
         uri_re = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
         # BeautifulSoup on content
@@ -78,16 +97,24 @@ class TextDataset(Dataset):
         # Returning text stripping out all uris
         return re.sub(uri_re, "", text)
 
-    def process_data(self, col_lst = []):
+    def process_data(self, col = 'content', remove_pontuation = True,  remove_stopw = True, remove_tags = True, lemmalize = True, stem = True):
         
-        self.data['content'] = self.data['content'].apply(lambda x: self.removeTagsAndUris(x) )
-        self.data['data'] = self.data['content'].apply(lambda x: self.removeStopwords(x) ) 
-        self.data['data'] = self.data['data'].apply(lambda x: self.removePonctuation(x) )
-        self.data['tokens'] = self.data['content'].apply(lambda x: self.tokenizer.tokenize(x) )
-            
-        if len(col_lst) >0:
-            self.data = self.data[col_lst]       
+        if remove_tags:
+            self.data['data'] = self.data[col].apply(lambda x: self._removeTagsAndUris(x) )
+        
+        if remove_stopw:
+            self.data['data'] = self.data['data'].apply(lambda x: self._removeStopwords(x) ) 
+        
+        if remove_pontuation:
+            self.data['data'] = self.data['data'].apply(lambda x: self._removePonctuation(x) )
+        
+        if lemmalize:
+            self.data['data'] = self.data['data'].apply(lambda x: self._lemmatizing(x) )
+        
+        if stem:
+            self.data['data'] = self.data['data'].apply(lambda x: self._stemming(x) )
 
+        
     def get_data(self):
 
         for file in glob.glob(self.root_dir + "/*.csv"):
@@ -121,4 +148,4 @@ def create_dataLoader(dsets, batch_size, pin_memory =  False):
     for key in dsets.keys():
         dset_loaders[key] = DataLoader(dsets[key], batch_size=batch_size, pin_memory=pin_memory)
 
-    return dset_loaders    
+    return dset_loaders  
