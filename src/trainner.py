@@ -8,69 +8,51 @@ Created on Tue Dec 26 20:39:35 2017
 import torch
 from torch.autograd import Variable
 import copy
+import torch.optim as optim
+import time
 
-class Trainner():
-    
-    def __init__(self, model = None, train_loader= None, test_loader= None ):
-        
-        self.model = model
-        self.train_loader = train_loader
-        self.test_loader = test_loader
 
-    def fit(self, X, Y):
-        Y_hat_oh = self.model(Variable(X) )
-        values, Y_hat = torch.max(Y_hat_oh, 1)
-        return Y_hat
+
+class TrainnerNLP():
     
-    
-    def getAccuracy(self, loader):
-        correct = 0
-        total = 0
-        for data in loader:
-            images, labels = data
-            outputs = self.model(Variable(images))
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted.numpy() == labels.numpy()).sum()
-        return 100 * correct / total
-    
-    
-    def train(self, num_epochs= None, loss_fn= None, optimizer= None, patience= None):
+    def __init__(self, params):
+        assert (params['model'] is not None) and (params['criterion'] is not None) and (params['optimizer'] is not None)
+        self.model = params['model']
+        self.criterion = params['criterion']
+        self.optimizer = params['optimizer']
+        self.words_ix = params['words_ix']
+        self.label_ix = params['label_ix']     
+
+    def make_bow_vector(self, sentence, word_to_ix):
+        vec = torch.zeros(len(word_to_ix))
+        for word in sentence:
+            vec[word_to_ix[word]] += 1
+        return vec.view(1, -1)
+
+    def make_target(self, label, label_to_ix):
+        return torch.LongTensor([label_to_ix[label]])
+
+
+    def train(self, data, num_epochs=None, train_loader = None):
         
-        history_loss = []
-        accuracy_train_history = []
-        accuracy_test_history = []
-        best_test_acc =  np.inf
-        patience_count= 0
+        ii_n = len(data)
+        start_time = time.time()
+    
         for epoch in range(num_epochs):
-            for i, data in enumerate(self.train_loader):
-                inputs, labels = data
-                inputs, labels = Variable(inputs), Variable(labels)
-                predict = self.model(inputs)
-                print(predict)
-                print('*****')
-                predict(labels)
-                loss = loss_fn(predict, labels)
-                optimizer.zero_grad()
+            for i, (instance, label) in enumerate(data):
+                bow_vec = Variable(self.make_bow_vector(instance.split(), self.words_ix))
+                target = Variable(self.make_target(label, self.label_ix))
+
+                log_probs = self.model(bow_vec)
+
+                # Step 4. Compute the loss, gradients, and update the parameters by
+                # calling optimizer.step()
+                loss = self.criterion(log_probs, target)
+                self.model.zero_grad()
                 loss.backward()
-                optimizer.step()
-                
-            accuracy_train_history.append(self.getAccuracy(self.train_loader) )
-            accuracy_test_history.append( self.getAccuracy(self.test_loader) )
-            history_loss.append(loss.data[0])
-            print('Epoch:', epoch, 'train loss:', history_loss[-1], ' train acc: ', accuracy_train_history[-1],  ' test acc: ', accuracy_test_history[-1])
-    
+                self.optimizer.step()
+        
+                print('\rTrain: {}/{}'.format(i, ii_n - 1), end='')
+            print('-  Epoch: {}/{} ok'.format(epoch, num_epochs - 1))
             
-            #Early stopping
-            if(best_test_acc < accuracy_test_history[-1]):
-                patience_count = 0
-                best_test_acc = accuracy_test_history[-1]
-                best_model = copy.deepcopy(self.model)
-    
-            if(patience_count > patience):
-                break;
-    
-            patience_count += 1
-    
-        print('Done!')
-        return history_loss, accuracy_train_history, accuracy_test_history, best_model 
+        print('Execution time {0:.2f} s'.format(round(time.time() - start_time), 2))

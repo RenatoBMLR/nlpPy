@@ -9,19 +9,17 @@ import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 import re
-from torch.utils.data import Dataset, DataLoader
 from nltk.tokenize import TweetTokenizer # a tweet tokenizer from nltk.
 import glob
 from nltk.corpus import stopwords
 import string
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
+ 
 
+class TextDataset():
 
-
-class TextDataset(Dataset):
-
-    def __init__(self, subjects, root_dir, col_lst = [], transform=None, val_size=0.1,
+    def __init__(self, subjects, root_dir, val_size=0.1,
                  is_valid=False, is_test=False, is_train = False, lang = 'english'):
         """
         Args:
@@ -32,7 +30,6 @@ class TextDataset(Dataset):
         self.data = pd.DataFrame()
         self.subjects = subjects
         self.root_dir = root_dir
-        self.transform = transform
         
         
         self.tokenizer = TweetTokenizer() 
@@ -40,7 +37,7 @@ class TextDataset(Dataset):
         self.lemmatizer = WordNetLemmatizer()
         self.ps = PorterStemmer()
 
-        self.get_data()
+        self._get_data()
         #self.data = (self.data if len(col_lst) else self.data[col_lst])
         
         if ( (is_train) or (is_valid)):
@@ -115,7 +112,7 @@ class TextDataset(Dataset):
             self.data['data'] = self.data['data'].apply(lambda x: self._stemming(x) )
 
         
-    def get_data(self):
+    def _get_data(self):
 
         for file in glob.glob(self.root_dir + "/*.csv"):
             df_aux = pd.read_csv(file)
@@ -132,20 +129,10 @@ class TextDataset(Dataset):
 
     def __getitem__(self, idx):
         
-        textSample = self.data.iloc[idx, 0:-1].as_matrix()
-        y = self.data.iloc[idx, -1]
+        textSample = self.data['data'].iloc[idx]
+        y = self.data['subject'].iloc[idx]
         
-
-        if self.transform:
-            textSample = self.transform(textSample)
-
         return textSample, y
 
 
-def create_dataLoader(dsets, batch_size, pin_memory =  False):
-
-    dset_loaders = {}
-    for key in dsets.keys():
-        dset_loaders[key] = DataLoader(dsets[key], batch_size=batch_size, pin_memory=pin_memory)
-
-    return dset_loaders  
+ 
