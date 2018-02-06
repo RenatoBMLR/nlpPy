@@ -111,7 +111,8 @@ class TextDataset():
         if stem:
             self.data['data'] = self.data['data'].apply(lambda x: self._stemming(x) )
 
-        
+        self.data['data'] = self.data['data'].apply(lambda x: x.lower())
+
     def _get_data(self):
 
         for file in glob.glob(self.root_dir + "/*.csv"):

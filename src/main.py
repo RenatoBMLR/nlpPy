@@ -1,4 +1,4 @@
-o#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Mon Dec 18 19:12:46 2017
@@ -8,8 +8,8 @@ Created on Mon Dec 18 19:12:46 2017
 
 import pandas as pd
 import numpy as np
-from utils import TextDataset
-from models import Net
+from torchvision import transforms
+from textDataset import *
 
 if __name__ == '__main__':
         
@@ -28,6 +28,32 @@ if __name__ == '__main__':
     
     subjects=['biology', 'cooking', 'crypto', 'diy', 'robotics', 'travel']
     path2data = '../data/'
-
-    tdataset = TextDataset(subjects, path2data + 'train/', col_lst = ['tokens', 'subject'] , is_train = True)
     
+    
+    df = TextDataset(subjects, path2data + 'train/',  is_train = True)
+    df.process_data(lemmalize = True, stem = False)
+    
+    for i, j in enumerate(df):
+        print(i)
+        print(j)
+        break;
+        
+    '''
+    
+    
+    data = df.data
+    dsets = {}
+    dsets['train'] = df
+    
+    batch_size = 32
+    dset_loaders = create_dataLoader(dsets, batch_size)
+    inputs, cls = next(iter(dset_loaders['train']))
+    
+    
+    
+    params = {'model' : model.mrnd, 
+    'criterion': loss_fn,  
+    'optimizer': optimizer, 
+    'callbacks': [savebest, ptt.AccuracyMetric()] #ptt.PlotCallback(),
+    }
+    '''
