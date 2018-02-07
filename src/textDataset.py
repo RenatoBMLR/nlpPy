@@ -97,21 +97,21 @@ class TextDataset():
     def process_data(self, col = 'content', remove_pontuation = True,  remove_stopw = True, remove_tags = True, lemmalize = True, stem = True):
         
         if remove_tags:
-            self.data['data'] = self.data[col].apply(lambda x: self._removeTagsAndUris(x) )
+            self.data[col + '_data'] = self.data[col].apply(lambda x: self._removeTagsAndUris(x) )
         
         if remove_stopw:
-            self.data['data'] = self.data['data'].apply(lambda x: self._removeStopwords(x) ) 
+            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removeStopwords(x) ) 
         
         if remove_pontuation:
-            self.data['data'] = self.data['data'].apply(lambda x: self._removePonctuation(x) )
+            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removePonctuation(x) )
         
         if lemmalize:
-            self.data['data'] = self.data['data'].apply(lambda x: self._lemmatizing(x) )
+            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._lemmatizing(x) )
         
         if stem:
-            self.data['data'] = self.data['data'].apply(lambda x: self._stemming(x) )
+            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._stemming(x) )
 
-        self.data['data'] = self.data['data'].apply(lambda x: x.lower())
+        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: x.lower())
 
     def _get_data(self):
 

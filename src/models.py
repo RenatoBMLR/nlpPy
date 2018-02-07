@@ -11,6 +11,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 import torch.nn as nn
+import operator
 
 
 class BoWClassifier(nn.Module):  
@@ -31,16 +32,20 @@ class BoWClassifier(nn.Module):
 
 class Tfid():
     
-    def __init__(self):
+    def __init__(self, data):
         self.frequency = []
         self.inverse_frequency = {}
+        self.data = data
 
-    def get_frequency(self, title):
+    def get_item(self, index):
+        return sorted(self.frequency[index].items(), key=operator.itemgetter(1), reverse=True)
+        
+    def get_frequency(self):
     
-        for i in range(len(title)):
+        for i in range(len(self.data)):
             word_count = {}
     
-            for word in title[i].split():
+            for word in self.data[i].split():
                 if word in word_count:    
                     word_count[word] = word_count[word] + 1
                 else:
@@ -52,4 +57,6 @@ class Tfid():
                 else:
                     self.inverse_frequency[word] = 1            
             self.frequency.append(word_count)
+           
+
             
