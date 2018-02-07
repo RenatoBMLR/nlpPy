@@ -111,6 +111,10 @@ class TextDataset():
         if stem:
             self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._stemming(x) )
 
+        
+        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: ' '.join(set(x.split())))
+        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: x.lower())
+
         self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: x.lower())
 
     def _get_data(self):
