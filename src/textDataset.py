@@ -15,11 +15,11 @@ from nltk.corpus import stopwords
 import string
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
- 
+import os
 
 class TextDataset():
 
-    def __init__(self, subjects, root_dir, val_size=0.1,
+    def __init__(self, root_dir, val_size=0.1,
                  is_valid=False, is_test=False, is_train = False, lang = 'english'):
         """
         Args:
@@ -28,7 +28,6 @@ class TextDataset():
                 on a sample.
         """
         self.data = pd.DataFrame()
-        self.subjects = subjects
         self.root_dir = root_dir
         
         
@@ -119,15 +118,15 @@ class TextDataset():
 
     def _get_data(self):
 
-        for file in glob.glob(self.root_dir + "/*.csv"):
-            df_aux = pd.read_csv(file)
-            if file.split('/')[-1][:-4] in self.subjects:
-                sub = file.split('/')[-1][:-4]
-            else:
-                sub = None
-                                
-            df_aux['subject'] = sub    
-            self.data=self.data.append(df_aux)
+        for root, dirs, files in os.walk(self.root_dir):
+            for file in files:
+                filename, file_extension = os.path.splitext(os.path.join(root, file))
+                if file_extension == '.csv':
+                    df_aux = pd.read_csv(os.path.join(root, file))
+                    sub = file.split('/')[-1][:-4]
+                    df_aux['subject'] = sub    
+                    self.data=self.data.append(df_aux)
+
             
     def __len__(self):
         return len(self.data)
