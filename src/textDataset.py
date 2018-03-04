@@ -16,8 +16,46 @@ import string
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
 import os
+import torch
+from torch.utils.data import Dataset, DataLoader
 
-class TextDataset():
+def create_dataLoader(dsets, batch_size,  pin_memory=False, use_shuffle=False):
+
+    dset_loaders = {}
+   
+    shuffle = False
+    for key in dsets.keys():
+        if use_shuffle:
+            if key != 'test':
+                shuffle = True
+            else:
+                shuffle = False
+        dset_loaders[key] = DataLoader(dsets[key], batch_size=batch_size, pin_memory=pin_memory, shuffle = shuffle)
+            
+    return dset_loaders
+
+
+class TextDataset(Dataset):
+    
+    
+    def __init__(self, x, y, transforms=None):
+    
+        self.x = x
+        self.y = y
+    
+    
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        
+        x = self.x[idx]
+        y = self.y[idx]
+        
+        return x, y
+
+
+class TextProcessing():
 
     def __init__(self, root_dir, val_size=0.1,
                  is_valid=False, is_test=False, is_train = False, lang = 'english'):
