@@ -45,7 +45,7 @@ class TextDataset(Dataset):
     
     
     def __len__(self):
-        return len(self.data)
+        return len(self.x)
 
     def __getitem__(self, idx):
         
@@ -67,7 +67,6 @@ class TextProcessing():
         """
         self.data = pd.DataFrame()
         self.root_dir = root_dir
-        
         
         self.tokenizer = TweetTokenizer() 
         self.stop_words = set(stopwords.words(lang))
@@ -154,6 +153,18 @@ class TextProcessing():
 
         self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: x.lower())
 
+    def make_bow_vector(self, col, words_ix):
+        
+        bow_vector = []
+        for i, sentence in self.data[col].iteritems():
+        
+            vec = torch.zeros(len(words_ix))
+            for word in sentence.split():
+                vec[words_ix[word]] += 1
+            bow_vector.append(vec.view(1, -1))
+        return bow_vector
+        
+    
     def _get_data(self):
 
         for root, dirs, files in os.walk(self.root_dir):
