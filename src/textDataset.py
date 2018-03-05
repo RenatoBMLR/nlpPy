@@ -38,10 +38,11 @@ def create_dataLoader(dsets, batch_size,  pin_memory=False, use_shuffle=False):
 class TextDataset(Dataset):
     
     
-    def __init__(self, x, y, transforms=None):
+    def __init__(self, x, y, transform=None):
     
         self.x = x
         self.y = y
+        self.transform = transform
     
     
     def __len__(self):
@@ -51,6 +52,9 @@ class TextDataset(Dataset):
         
         x = self.x[idx]
         y = self.y[idx]
+
+        if self.transform is not None:
+            x = self.transform(x)
         
         return x, y
 
