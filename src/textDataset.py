@@ -38,10 +38,13 @@ def create_dataLoader(dsets, batch_size,  pin_memory=False, use_shuffle=False):
 class TextDataset(Dataset):
     
     
-    def __init__(self, x, y, transform=None):
+    def __init__(self, x, y, is_test = False, transform=None):
     
         self.x = x
-        self.y = y
+        if is_test:
+            self.y = np.zeros(len(self.x))
+        else:
+            self.y = y
         self.transform = transform
     
     
@@ -125,12 +128,13 @@ class TextProcessing():
     
         uri_re = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
         # BeautifulSoup on content
-        soup = BeautifulSoup(x, "html.parser")
+        #soup = BeautifulSoup(x, "html.parser")
         # Stripping all <code> tags with their content if any
-        if soup.code:
-            soup.code.decompose()
+        #if soup.code:
+        #    soup.code.decompose()
         # Get all the text out of the html
-        text =  soup.get_text()
+        #text =  soup.get_text()
+        text = x
         # Returning text stripping out all uris
         return re.sub(uri_re, "", text)
 

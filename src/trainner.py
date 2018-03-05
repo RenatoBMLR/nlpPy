@@ -45,3 +45,20 @@ class TrainnerNLP():
             print(' -  Epoch: {}/{} Loss: {}'.format(epoch, num_epochs - 1, self.loss_lst[-1]))
             
         print('Execution time {0:.2f} s'.format(round(time.time() - start_time), 2))
+
+    def predict(self, Xin):
+        y_pred = self.model.forward(Variable(Xin))
+        return y_pred.data
+    
+    
+    def predict_classes(self, Xin):
+        y_pred = self.predict(Xin)
+        _, pred = torch.max(y_pred, 1)
+        return pred
+    
+    
+    def predict_probas(self, Xin):
+        y_pred = self.predict(Xin)
+        probas = F.softmax(y_pred)
+        return probas
+    
