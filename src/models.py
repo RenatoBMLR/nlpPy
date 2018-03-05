@@ -14,21 +14,26 @@ import torch.nn as nn
 import operator
 
 
+
 class BoWClassifier(nn.Module):  
 
     def __init__(self, num_labels, vocab_size):
 
         super(BoWClassifier, self).__init__()
 
+        self.fc1 = torch.nn.Linear(vocab_size, 2*num_labels)
+        self.at1 = torch.nn.ReLU()
+        self.fc2 = torch.nn.Linear(2*num_labels, num_labels)
+        self.at2 = torch.nn.Sigmoid()
 
-        self.linear = nn.Linear(vocab_size, num_labels)
+    def forward(self, x):
 
-        # The non-linearity log softmax does not have parameters
+        x = self.fc1(x)
+        x = self.at1(x)
+        x = self.fc2(x)
+        x=self.at2(x)
+        return x
 
-    def forward(self, bow_vec):
-        # Pass the input through the linear layer,
-        # then pass that through log_softmax.
-        return F.log_softmax(self.linear(bow_vec), dim=1)
 
 class Tfid():
     

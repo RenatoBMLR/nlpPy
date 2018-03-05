@@ -20,39 +20,28 @@ class TrainnerNLP():
         self.model = params['model']
         self.criterion = params['criterion']
         self.optimizer = params['optimizer']
-        self.words_ix = params['words_ix']
-        self.label_ix = params['label_ix']     
-
-    def make_bow_vector(self, sentence, word_to_ix):
-        vec = torch.zeros(len(word_to_ix))
-        for word in sentence:
-            vec[word_to_ix[word]] += 1
-        return vec.view(1, -1)
-
-    def make_target(self, label, label_to_ix):
-        return torch.LongTensor([label_to_ix[label]])
 
 
-    def train(self, data, num_epochs=None, train_loader = None):
+    def train(self, dset_loader, num_epochs=None, train_loader = None):
         
-        ii_n = len(data)
+        ii_n = len(dset_loader)
         start_time = time.time()
+        self.loss_lst = []
     
         for epoch in range(num_epochs):
-            for i, (instance, label) in enumerate(data):
-                bow_vec = Variable(self.make_bow_vector(instance.split(), self.words_ix))
-                target = Variable(self.make_target(label, self.label_ix))
+            for i, (instance, label) in enumerate(dset_loader):
+                bow_vec, target = Variable(instance), Variable(label)
+                 
 
                 log_probs = self.model(bow_vec)
 
-                # Step 4. Compute the loss, gradients, and update the parameters by
-                # calling optimizer.step()
                 loss = self.criterion(log_probs, target)
                 self.model.zero_grad()
                 loss.backward()
                 self.optimizer.step()
         
                 print('\rTrain: {}/{}'.format(i, ii_n - 1), end='')
-            print('-  Epoch: {}/{} ok'.format(epoch, num_epochs - 1))
+            self.loss_lst.append(loss.data.numpy()[0])
+            print(' -  Epoch: {}/{} Loss: {}'.format(epoch, num_epochs - 1, self.loss_lst[-1]))
             
         print('Execution time {0:.2f} s'.format(round(time.time() - start_time), 2))
