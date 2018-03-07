@@ -20,6 +20,12 @@ import torch.optim as optim
 from trainner import TrainnerNLP
 
 
+def wordListToFreqDict(wordlist):
+    wordfreq = [wordlist.count(p) for p in wordlist]
+    return dict(zip(wordlist,wordfreq))
+
+
+
 if __name__ == '__main__':
         
     '''
@@ -71,12 +77,14 @@ if __name__ == '__main__':
     path2data = '../data/toxic/'
 
     text = {
-            'train': TextProcessing(path2data + 'train/', is_train = True),
-            'test':  TextProcessing(path2data + 'test/',  is_test=True)
+            'train': TextCleaner(path2data + 'train/', is_train = True),
+            'test':  TextCleaner(path2data + 'test/',  is_test=True)
+
     }
 
-    text['train'].process_data(col = 'comment_text', lemmalize = False, stem = False)
-    
+    text['train'].process_data(col = 'comment_text', remove_stopw = True, remove_tags=True)
+    text['test'].process_data(col = 'comment_text', remove_stopw = True, remove_tags=True)
+
     col = 'comment_text_data'
     
     # index into the Bag of words vector
@@ -91,10 +99,12 @@ if __name__ == '__main__':
     VOCAB_SIZE = len(words_ix)
     NUM_LABELS = 6
     print('VOCAB_SIZE: {} NUM_LABELS: {}'.format(VOCAB_SIZE, NUM_LABELS))
+    
+
 
 
     model = BoWClassifier(NUM_LABELS, VOCAB_SIZE)
-    
+
     loss_fn = torch.nn.MultiLabelMarginLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.1)
     
@@ -103,25 +113,24 @@ if __name__ == '__main__':
               'optimizer': optimizer, 
     }
     
-    y_train = text['train'].data[['toxic', 'severe_toxic', 'obscene', 'threat',
-       'insult', 'identity_hate']].values
-        
-    x_train = np.vstack( text['train'].make_bow_vector('comment_text_data', words_ix))
-
-    text['test'].process_data(col = 'comment_text', lemmalize = False, stem = False)
-    x_test = np.vstack( text['test'].make_bow_vector('comment_text_data', words_ix))
-                      
+    #x_train = text['train'].make_bow_vector('comment_text_data', words_ix)
     
+    '''
+    x_test, y_test = text['test'].get_data('comment_text_data', words_ix)
+
     dsets = {
             'train': TextDataset(x_train, y_train),
             'test': TextDataset(x_train, is_test = True)
             }
+
     dset_loaders = create_dataLoader(dsets, 10, pin_memory=False, use_shuffle= True)
     
     NLPtrainner = TrainnerNLP(params)
     NLPtrainner.train(dset_loaders['train'], 10)
     
     NLPtrainner.predict(dset_loaders['test'], 10)
+    
+    '''
     
     
 

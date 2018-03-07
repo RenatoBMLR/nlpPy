@@ -62,7 +62,7 @@ class TextDataset(Dataset):
         return x, y
 
 
-class TextProcessing():
+class TextCleaner():
 
     def __init__(self, root_dir, val_size=0.1,
                  is_valid=False, is_test=False, is_train = False, lang = 'english'):
@@ -80,7 +80,7 @@ class TextProcessing():
         self.lemmatizer = WordNetLemmatizer()
         self.ps = PorterStemmer()
 
-        self._get_data()
+        self._read_data()
         #self.data = (self.data if len(col_lst) else self.data[col_lst])
         
         if ( (is_train) or (is_valid)):
@@ -111,7 +111,8 @@ class TextProcessing():
 
 
     def _removePonctuation(self, words):
-        return ' '.join(word.strip(string.punctuation) for word in words.split())
+        words = words.lower()
+        return re.sub(r'[^\w\s]', '', words)
 
     
     def _lemmatizing(self, words):
@@ -128,38 +129,33 @@ class TextProcessing():
     
         uri_re = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
         # BeautifulSoup on content
-        #soup = BeautifulSoup(x, "html.parser")
+        soup = BeautifulSoup(x, "html.parser")
         # Stripping all <code> tags with their content if any
-        #if soup.code:
-        #    soup.code.decompose()
+        if soup.code:
+            soup.code.decompose()
         # Get all the text out of the html
-        #text =  soup.get_text()
-        text = x
+        text =  soup.get_text()
         # Returning text stripping out all uris
         return re.sub(uri_re, "", text)
 
-    def process_data(self, col = 'content', remove_pontuation = True,  remove_stopw = True, remove_tags = True, lemmalize = True, stem = True):
-        
-        if remove_tags:
-            self.data[col + '_data'] = self.data[col].apply(lambda x: self._removeTagsAndUris(x) )
-        
-        if remove_stopw:
-            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removeStopwords(x) ) 
+    def process_data(self, col = 'content', remove_pontuation = True,  remove_stopw = False, remove_tags = False, lemmalize = False, stem = False):
         
         if remove_pontuation:
-            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removePonctuation(x) )
+            self.data[col + '_data'] = self.data[col].apply(lambda x: self._removePonctuation(x) )
+        
+        if remove_stopw:
+            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removeStopwords(x)) 
+        
+        if remove_tags:
+            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removeTagsAndUris(x) )
         
         if lemmalize:
             self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._lemmatizing(x) )
         
         if stem:
-            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._stemming(x) )
+            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._stemming(x))
 
-        
         self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: ' '.join(set(x.split())))
-        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: x.lower())
-
-        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: x.lower())
 
     def make_bow_vector(self, col, words_ix):
         
@@ -173,7 +169,7 @@ class TextProcessing():
         return bow_vector
         
     
-    def _get_data(self):
+    def _read_data(self):
 
         for root, dirs, files in os.walk(self.root_dir):
             for file in files:
@@ -184,6 +180,12 @@ class TextProcessing():
                     df_aux['subject'] = sub    
                     self.data=self.data.append(df_aux)
 
+    def get_data(self, x_col, words_ix, y_col = []):
+        
+        x = self.make_bow_vector(x_col, words_ix)
+        y=self.data[y_col]
+        
+        return (x,y)
             
     def __len__(self):
         return len(self.data)

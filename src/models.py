@@ -20,6 +20,7 @@ class BoWClassifier(nn.Module):
     def __init__(self, num_labels, vocab_size):
 
         super(BoWClassifier, self).__init__()
+        print('Initializing BoWClassifier')
 
         self.fc1 = torch.nn.Linear(vocab_size, 2*num_labels)
         self.at1 = torch.nn.ReLU()
