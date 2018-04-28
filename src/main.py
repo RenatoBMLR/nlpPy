@@ -87,6 +87,10 @@ if __name__ == '__main__':
 
     col = 'comment_text_data'
     
+    
+    wordListToFreqDict(text['train'].data[col].values)
+    
+    
     # index into the Bag of words vector
     words_ix = {}
     words_voc = []
