@@ -62,7 +62,7 @@ class TextTorchDataset(Dataset):
 class TextDataset():
 
     def __init__(self, root_dir, val_size=0.1,
-                 is_valid=False, is_test=False, is_train = False, lang = 'english'):
+                 extension='.csv', sep=',', is_valid=False, is_test=False, is_train = False, lang = 'english'):
         """
         Args:
             root_dir (string): Directory with all the images.
@@ -77,7 +77,7 @@ class TextDataset():
         self.lemmatizer = WordNetLemmatizer()
         self.ps = PorterStemmer()
 
-        self._read_data()
+        self._read_data(extension, sep)
         #self.data = (self.data if len(col_lst) else self.data[col_lst])
 
         if ( (is_train) or (is_valid)):
@@ -148,13 +148,13 @@ class TextDataset():
         #self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: ' '.join(set(x.split())))
         self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: set(x.split()))
 
-    def _read_data(self):
+    def _read_data(self, extension, sep):
 
         for root, dirs, files in os.walk(self.root_dir):
             for file in files:
                 filename, file_extension = os.path.splitext(os.path.join(root, file))
-                if file_extension == '.csv':
-                    df_aux = pd.read_csv(os.path.join(root, file))
+                if file_extension == extension:
+                    df_aux = pd.read_csv(os.path.join(root, file), sep=sep)
                     sub = file.split('/')[-1][:-4]
                     df_aux['subject'] = sub
                     self.data=self.data.append(df_aux)
