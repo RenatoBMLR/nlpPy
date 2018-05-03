@@ -146,7 +146,7 @@ class TextDataset():
             self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._stemming(x))
 
         #self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: ' '.join(set(x.split())))
-        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: set(x.split()))
+        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: list(x.split()))
 
     def _read_data(self, extension, sep):
 
