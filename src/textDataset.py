@@ -10,9 +10,7 @@ import numpy as np
 from bs4 import BeautifulSoup
 import re
 from nltk.tokenize import TweetTokenizer # a tweet tokenizer from nltk.
-import glob
 from nltk.corpus import stopwords
-import string
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
 import os
@@ -101,22 +99,23 @@ class TextDataset():
         self.data = self.data.take(index,axis=0)
         self.y = self.y.take(index,axis=0)
 
+    def _get_tokens(self, words):    
+        return [word.lower() for word in words.split()]
+    
     def _removeStopwords(self, words):
         # Removing all the stopwords
-        return " ".join([word for word in words.split() if word not in self.stop_words])
-
+        return [word for word in words if word not in self.stop_words]
 
     def _removePonctuation(self, words):
-        words = words.lower()
         return re.sub(r'[^\w\s]', '', words)
 
     def _lemmatizing(self, words):
         #Lemmatizing
-        return ' '.join(self.lemmatizer.lemmatize(word) for word in words.split())
+        return [self.lemmatizer.lemmatize(word) for word in words]
 
     def _stemming(self, words):
         #Stemming
-        return ' '.join(self.ps(word) for word in words.split())
+        return [self.ps.stem(word) for word in words]
 
     def _removeTagsAndUris(self, x):
 
@@ -133,21 +132,24 @@ class TextDataset():
 
     def process_data(self, col = 'content', remove_pontuation = True,  remove_stopw = False, remove_tags = False, lemmalize = False, stem = False):
 
+        proc_col = col
         if remove_pontuation:
-            self.data[col + '_data'] = self.data[col].apply(lambda x: self._removePonctuation(x) )
+            proc_col = col + '_data'
+            self.data[proc_col] = self.data[col].apply(lambda x: self._removePonctuation(x) )
+        
+        # get tokens of the sentence
+        self.data[proc_col] = self.data[proc_col].apply(lambda x: self._get_tokens(x))
         if remove_stopw:
-            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removeStopwords(x)) 
+            self.data[proc_col] = self.data[proc_col].apply(lambda x: self._removeStopwords(x)) 
         if remove_tags:
-            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._removeTagsAndUris(x) )
+            self.data[proc_col] = self.data[proc_col].apply(lambda x: self._removeTagsAndUris(x) )
         if lemmalize:
-            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._lemmatizing(x) )
-
+            self.data[proc_col] = self.data[proc_col].apply(lambda x: self._lemmatizing(x) )
         if stem:
-            self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: self._stemming(x))
+            self.data[proc_col] = self.data[proc_col].apply(lambda x: self._stemming(x))
 
-        #self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: ' '.join(set(x.split())))
-        self.data[col + '_data'] = self.data[col + '_data'].apply(lambda x: list(x.split()))
-
+        self.proc_col = proc_col
+        
     def _read_data(self, extension, sep):
 
         for root, dirs, files in os.walk(self.root_dir):
@@ -159,27 +161,15 @@ class TextDataset():
                     df_aux['subject'] = sub
                     self.data=self.data.append(df_aux)
 
-    def make_bow_vector(self, col, words_ix):
-
-        bow_vector = []
-        for i, sentence in self.data[col].iteritems():
-
-            vec = torch.zeros(len(words_ix))
-            for word in sentence.split():
-                vec[words_ix[word]] += 1
-            bow_vector.append(vec.view(1, -1))
-        return bow_vector
-
     def get_data(self, x_col, words_ix, y_col = []):
-
         x = self.make_bow_vector(x_col, words_ix)
         y=self.data[y_col]
         return (x,y)
+
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        textSample = self.data['data'].iloc[idx]
+        textSample = self.data[self.proc_col].iloc[idx]
         y = self.data['subject'].iloc[idx]
-
         return textSample, y
