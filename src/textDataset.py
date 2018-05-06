@@ -148,6 +148,7 @@ class TextDataset():
         if stem:
             self.data[proc_col] = self.data[proc_col].apply(lambda x: self._stemming(x))
 
+        self.data['nb_words'] = self.data[proc_col].apply(lambda x: len(x))
         self.proc_col = proc_col
         
     def _read_data(self, extension, sep):
